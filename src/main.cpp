@@ -3,9 +3,7 @@
 void setup()
 {
   Serial.begin(115200);
-  //设置PA1为低电平
-  pinMode(PA1,OUTPUT);
-  digitalWrite(PA1,LOW);
+  IO_device_init();
 }
 
 void loop()
@@ -13,23 +11,25 @@ void loop()
 
   // setting all pins at the same time to either HIGH or LOW
   O1_74HC595_sr.setAllHigh(); // set all pins HIGH
-  {
-    int pin = 0;
-    uint8_t state = O1_74HC595_sr.get(pin); // 0 = LOW, 1 = HIGH
-    Serial.printf("Pin %d is %d\n", pin, state);
-  }
-    O1_74HC595_sr.updateRegisters(); // update the pins to the set values
+  O2_74HC595_sr.setAllHigh();
+  O3_74HC595_sr.setAllHigh();
+  O4_74HC595_sr.setAllHigh();
 
+  O1_74HC595_sr.updateRegisters(); // update the pins to the set values
+  O2_74HC595_sr.updateRegisters();
+  O3_74HC595_sr.updateRegisters();
+  O4_74HC595_sr.updateRegisters();
   delay(10);
 
   O1_74HC595_sr.setAllLow(); // set all pins LOW
-  {
-    int pin = 0;
-    uint8_t state = O1_74HC595_sr.get(pin); // 0 = LOW, 1 = HIGH
-    Serial.printf("Pin %d is %d\n", pin, state);
-  }
-    O1_74HC595_sr.updateRegisters(); // update the pins to the set values
+  O2_74HC595_sr.setAllLow(); // set all pins LOW
+  O3_74HC595_sr.setAllLow(); // set all pins LOW
+  O4_74HC595_sr.setAllLow(); // set all pins LOW
+
+  O1_74HC595_sr.updateRegisters(); // update the pins to the set values
+  O2_74HC595_sr.updateRegisters(); // update the pins to the set values
+  O3_74HC595_sr.updateRegisters(); // update the pins to the set values
+  O4_74HC595_sr.updateRegisters(); // update the pins to the set values
 
   delay(10);
-
 }
