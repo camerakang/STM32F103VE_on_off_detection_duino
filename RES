@@ -1,0 +1,199 @@
+#include <Arduino.h>
+#include "74HC595_device.h"
+#include <arduino-timer.h>
+Timer<1, micros> timer;    // create a timer with 1 task and microsecond resolution
+
+// 定义 PWM 控制引脚数量
+const int pwmCount = 32;
+
+// 定义 PWM 信号的频率（单位：Hz），从 1 Hz 开始，每个频率相差 100 Hz
+const int pwmFrequencies[pwmCount] = {
+    1, 101, 201, 301, 401,
+    501, 601, 701, 801, 901,
+    1001, 1101, 1201, 1301, 1401,
+    1501, 1601, 1701, 1801, 1901,
+    2001, 2101, 2201, 2301, 2401,
+    2501, 2601, 2701, 2801, 2901,
+    3001, 3101};
+
+// PWM 任务的状态数组
+bool pwmState[pwmCount] = {false};
+
+// PWM 任务的回调函数
+void pwmCallback(int index)
+{
+  // 切换 PWM 信号状态
+  pwmState[index] = !pwmState[index];
+
+  // 更新对应的 74HC595 移位寄存器输出
+  uint8_t output;
+
+  if (index < 8)
+  {
+    output = O1_74HC595_sr.get(index); // 获取第一个移位寄存器的当前状态
+    if (pwmState[index])
+    {
+      output |= (1 << index); // 设置对应位为高电平
+    }
+    else
+    {
+      output &= ~(1 << index); // 清除对应位为低电平
+    }
+    O1_74HC595_sr.set(index, (pwmState[index] ? 1 : 0)); // 更新第一个移位寄存器的输出
+  }
+  else if (index < 16)
+  {
+    output = O2_74HC595_sr.get(index - 8); // 获取第二个移位寄存器的当前状态
+    if (pwmState[index])
+    {
+      output |= (1 << (index - 8));
+    }
+    else
+    {
+      output &= ~(1 << (index - 8));
+    }
+    O2_74HC595_sr.set(index - 8, (pwmState[index] ? 1 : 0)); // 更新第二个移位寄存器的输出
+  }
+  else if (index < 24)
+  {
+    output = O3_74HC595_sr.get(index - 16); // 获取第三个移位寄存器的当前状态
+    if (pwmState[index])
+    {
+      output |= (1 << (index - 16));
+    }
+    else
+    {
+      output &= ~(1 << (index - 16));
+    }
+    O3_74HC595_sr.set(index - 16, (pwmState[index] ? 1 : 0)); // 更新第三个移位寄存器的输出
+  }
+  else
+  {
+    output = O4_74HC595_sr.get(index - 24); // 获取第四个移位寄存器的当前状态
+    if (pwmState[index])
+    {
+      output |= (1 << (index - 24));
+    }
+    else
+    {
+      output &= ~(1 << (index - 24));
+    }
+    O4_74HC595_sr.set(index - 24, (pwmState[index] ? 1 : 0)); // 更新第四个移位寄存器的输出
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+
+  // 初始化所有移位寄存器为低电平
+  for (uint8_t i = 0; i < 32; i++)
+  {
+    if (i < 8)
+      O1_74HC595_sr.set(i, 0);
+    else if (i < 16)
+      O2_74HC595_sr.set(i - 8, 0);
+    else if (i < 24)
+      O3_74HC595_sr.set(i - 16, 0);
+    else
+      O4_74HC595_sr.set(i - 24, 0);
+  }
+
+  // 设置每个 PWM 引脚的定时器任务
+  for (int i = 0; i < pwmCount; i++)
+  {
+    unsigned long period = 1000000 / pwmFrequencies[i]; // 计算周期（微秒）
+
+    // 使用 lambda 表达式时，确保它接受一个 void* 参数
+    timer.every(period, [](void *arg)
+                {
+                  int index = reinterpret_cast<int>(arg); // 将 void* 转回 int
+                  pwmCallback(index);
+                  return true; // 返回 true 表示任务仍然有效
+                },
+                reinterpret_cast<void *>(i)); // 传递 index
+  }
+}
+
+void loop()
+{
+  timer.tick(); // 检查并执行定时器任务
+}
+
+
+
+void doingSomething2ms()
+{
+  if (io_flag % 2 == 1)
+  { // Doing something here inside ISR
+    // O1_74HC595_sr.setAllHigh();
+    O1_74HC595_sr.set(0, 1);
+  }
+  else
+  {
+    // O1_74HC595_sr.setAllLow();
+    O1_74HC595_sr.set(0, 0);
+  }
+  Serial.println(io_flag);
+  // O1_74HC595_sr.updateRegisters();
+  io_flag++;
+}
+
+void doingSomething5ms()
+{
+  if (io_flag2 % 2 == 1)
+  { // Doing something here inside ISR
+    // O1_74HC595_sr.setAllHigh();
+    // O1_74HC595_sr.setAllHigh();
+  }
+  else
+  {
+    // O1_74HC595_sr.setAllLow();
+  }
+  Serial.println(io_flag2);
+  // O1_74HC595_sr.updateRegisters();
+  io_flag2++;
+}
+
+void doingSomething11s()
+{
+  if (io_flag3 % 2 == 1)
+  { // Doing something here inside ISR
+    O1_74HC595_sr.set(2, 1);
+  }
+  else
+  {
+    O1_74HC595_sr.set(2, 0);
+  }
+  io_flag3++;
+  Serial.println(io_flag3);
+  // O2_74HC595_sr.updateRegisters();
+  // io_flag1 = !io_flag1;
+}
+
+void doingSomething101s()
+{
+  if (io_flag3 % 2 == 1)
+  { // Doing something here inside ISR
+    O2_74HC595_sr.set(3, 1);
+  }
+  else
+  {
+    O2_74HC595_sr.set(3, 0);
+  }
+  io_flag3++;
+  // O2_74HC595_sr.updateRegisters();
+}
+void doingSomething4s()
+{
+  if (io_flag4)
+  { // Doing something here inside ISR
+    O2_74HC595_sr.set(2, io_flag4);
+  }
+  else
+  {
+    O2_74HC595_sr.set(2, io_flag4);
+  }
+  io_flag4 = !io_flag4;
+  // O2_74HC595_sr.updateRegisters();
+}
