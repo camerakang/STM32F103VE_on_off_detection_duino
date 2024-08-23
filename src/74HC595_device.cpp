@@ -330,7 +330,7 @@ void TaskTimer1Begin(void *pvParameters)
         Timer1Handler();
     }
 }
-void IO_device_init()
+void IOOUT_device_init()
 {
     pinMode(OE_CH1_8, OUTPUT);
     digitalWrite(OE_CH1_8, LOW);
@@ -372,4 +372,73 @@ void IO_device_init()
     O2_74HC595_sr.setAllLow();
     O3_74HC595_sr.setAllLow();
     O4_74HC595_sr.setAllLow();
+}
+
+void onPulse_0()
+{
+    Serial.println("onPulse_0");
+}
+void onPulse_1()
+{
+}
+void onPulse_2()
+{
+}
+void onPulse_3()
+{
+}
+void onPulse_4()
+{
+}
+void onPulse_5()
+{
+}
+void onPulse_6()
+{
+}
+void onPulse_7()
+{
+}
+void onPulse_8()
+{
+}
+void onPulse_9()
+{
+}
+void onPulse_10()
+{
+}
+void onPulse_11()
+{
+}
+void onPulse_12()
+{
+}
+void onPulse_13()
+{
+}
+void onPulse_14()
+{
+}
+void onPulse_15()
+{
+}
+void IOIN_device_init()
+{
+    attachInterrupt(digitalPinToInterrupt(PD0), onPulse_0, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD1), onPulse_1, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD2), onPulse_2, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD3), onPulse_3, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD4), onPulse_4, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD5), onPulse_5, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD6), onPulse_6, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD7), onPulse_7, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD8), onPulse_8, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD9), onPulse_9, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD10), onPulse_10, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD11), onPulse_11, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD12), onPulse_12, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD13), onPulse_13, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD14), onPulse_14, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD15), onPulse_15, FALLING);
 }

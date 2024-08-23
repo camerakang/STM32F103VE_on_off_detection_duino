@@ -3,7 +3,7 @@
 #include <ShiftRegister74HC595.h>
 #include <STM32FreeRTOS.h>
 
-#define HW_TIMER_INTERVAL_US 50L
+#define HW_TIMER_INTERVAL_US 1000L
 
 // 定义基本的时间间隔（单位：毫秒）
 #define BASE_INTERVAL_MS 1000
@@ -46,7 +46,8 @@ extern ShiftRegister74HC595<1> O1_74HC595_sr;
 extern ShiftRegister74HC595<1> O2_74HC595_sr;
 extern ShiftRegister74HC595<1> O3_74HC595_sr;
 extern ShiftRegister74HC595<1> O4_74HC595_sr;
-void IO_device_init();
+void IOOUT_device_init();
+void IOIN_device_init();
 
 void TaskTimer0Begin(void *pvParameters);
 void TaskTimer1Begin(void *pvParameters);
