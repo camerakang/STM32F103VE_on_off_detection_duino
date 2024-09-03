@@ -1,6 +1,11 @@
 #include "74HC595_device.h"
 #include "TimerInterrupt_Generic.h"
 #include "ISR_Timer_Generic.h"
+uint32_t pwm_frequency[32] = {0};
+volatile uint16_t rising_edge_count[32]{0};
+volatile uint32_t start_time[32];
+volatile uint32_t end_time[32];
+// volatile unsigned long pwm_frequency;
 
 STM32Timer ITimer0(TIM1);
 STM32Timer ITimer1(TIM8);
@@ -11,6 +16,8 @@ ShiftRegister74HC595<1> O2_74HC595_sr(O2_74HC595_DATA_DS_PIN, O2_74HC595_CLOCK_S
 ShiftRegister74HC595<1> O3_74HC595_sr(O3_74HC595_DATA_DS_PIN, O3_74HC595_CLOCK_SHCP_PIN, O3_74HC595_LATCH_STCP_PIN);
 ShiftRegister74HC595<1> O4_74HC595_sr(O4_74HC595_DATA_DS_PIN, O4_74HC595_CLOCK_SHCP_PIN, O4_74HC595_LATCH_STCP_PIN);
 
+
+void calculatePwmFrequency(int index);
 // 定义PWM回调函数
 void PWM_1HZ()
 {
@@ -375,100 +382,92 @@ void IOOUT_device_init()
     O3_74HC595_sr.setAllLow();
     O4_74HC595_sr.setAllLow();
 }
-volatile unsigned int rising_edge_count;
-volatile unsigned long start_time;
-volatile unsigned long end_time;
-volatile unsigned long pwm_frequency;
 
 void onPulse_0()
 {
-
-
-    // if (rising_edge_count == 0)
-    // {
-    //     start_time = micros();
-    // }
-    // else if (rising_edge_count == PULSE_COUNT)
-    // {
-    //     end_time = micros();
-    // }
-    // rising_edge_count++;
-
-    // if (rising_edge_count > PULSE_COUNT)
-    // {
-    //     unsigned long pulse_duration = end_time - start_time;
-    //     unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
-    //     Serial.print("Average PWM Frequency: ");
-    //     Serial.print(average_frequency);
-    //     Serial.println(" Hz");
-    //     rising_edge_count = 0;
-    //     pwm_frequency = 0; // Note: This line seems unnecessary as pwm_frequency is not used after being set to 0.
-    // }
+    calculatePwmFrequency(0);
 }
 void onPulse_1()
 {
+    calculatePwmFrequency(1);
 }
 void onPulse_2()
 {
+    calculatePwmFrequency(2);
 }
 void onPulse_3()
 {
+    calculatePwmFrequency(3);
 }
 void onPulse_4()
 {
+    calculatePwmFrequency(4);
 }
 void onPulse_5()
 {
+    calculatePwmFrequency(5);
 }
 void onPulse_6()
 {
+    calculatePwmFrequency(6);
 }
 void onPulse_7()
 {
+    calculatePwmFrequency(7);
 }
 void onPulse_8()
 {
+    calculatePwmFrequency(8);
 }
 void onPulse_9()
 {
+    calculatePwmFrequency(9);
 }
 void onPulse_10()
 {
+    calculatePwmFrequency(10);
 }
 void onPulse_11()
 {
+    calculatePwmFrequency(11);
 }
 void onPulse_12()
 {
+    calculatePwmFrequency(12);
 }
 void onPulse_13()
 {
+         calculatePwmFrequency(13);
+
 }
 void onPulse_14()
 {
+         calculatePwmFrequency(14);
+
 }
 void onPulse_15()
 {
-    if (rising_edge_count == 0)
-    {
-        start_time = micros();
-    }
-    else if (rising_edge_count == PULSE_COUNT)
-    {
-        end_time = micros();
-    }
-    rising_edge_count++;
+     calculatePwmFrequency(15);
+    // if (rising_edge_count[15] == 0)
+    // {
+    //     start_time = micros();
+    // }
+    // else if (rising_edge_count[15] == PULSE_COUNT)
+    // {
+    //     end_time = micros();
+    // }
+    // rising_edge_count[15]++;
 
-    if (rising_edge_count > PULSE_COUNT)
-    {
-        unsigned long pulse_duration = end_time - start_time;
-        unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
-        Serial.print("Average PWM Frequency: ");
-        Serial.print(average_frequency);
-        Serial.println(" Hz");
-        rising_edge_count = 0;
-        pwm_frequency = 0; // Note: This line seems unnecessary as pwm_frequency is not used after being set to 0.
-    }
+    // if (rising_edge_count[15] > PULSE_COUNT)
+    // {
+    //     unsigned long pulse_duration = end_time - start_time;
+    //     unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
+    //     pwm_frequency[15] = average_frequency;
+    //     Serial.print("Average PWM Frequency: ");
+    //     Serial.print(pwm_frequency[15]);
+    //     Serial.println(" Hz");
+    //     rising_edge_count[15] = 0;
+    // }
 }
 void IOIN_device_init()
 {
@@ -505,4 +504,30 @@ void IOIN_device_init()
     attachInterrupt(digitalPinToInterrupt(PD13), onPulse_13, FALLING);
     attachInterrupt(digitalPinToInterrupt(PD14), onPulse_14, FALLING);
     attachInterrupt(digitalPinToInterrupt(PD15), onPulse_15, FALLING);
+}
+
+void calculatePwmFrequency(int index)
+{
+    if (rising_edge_count[index] == 0)
+    {
+        start_time[index] = micros();
+    }
+    else if (rising_edge_count[index] == PULSE_COUNT)
+    {
+        end_time[index] = micros();
+    }
+    rising_edge_count[index]++;
+
+    if (rising_edge_count[index] > PULSE_COUNT)
+    {
+        unsigned long pulse_duration = end_time[index] - start_time[index];
+        unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
+        pwm_frequency[index] = average_frequency;
+        Serial.print("Average PWM Frequency for channel ");
+        Serial.print(index);
+        Serial.print(": ");
+        Serial.print(pwm_frequency[index]);
+        Serial.println(" Hz");
+        rising_edge_count[index] = 0;
+    }
 }
