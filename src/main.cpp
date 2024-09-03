@@ -25,16 +25,7 @@ void TaskFrequencyCalculation(void *pvParameters)
 {
   while (1)
   {
-    if (rising_edge_count > PULSE_COUNT)
-    {
-      unsigned long pulse_duration = end_time - start_time;
-      unsigned long average_frequency = 1000000 / (pulse_duration / rising_edge_count);
-      Serial.print("Average PWM Frequency: ");
-      Serial.print(average_frequency);
-      Serial.println(" Hz");
-      rising_edge_count = 0;
-      pwm_frequency = 0;
-    }
+
     
   }
 }

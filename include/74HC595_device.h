@@ -9,7 +9,7 @@
 #define BASE_INTERVAL_MS 1000
 
 //定义要检测的脉冲数量
-#define PULSE_COUNT 100
+#define PULSE_COUNT 1000
 // 生成32个定时器间隔
 #define TIMER_INTERVAL_1HZ   (BASE_INTERVAL_MS / 3000)   // 1Hz  -> 1000ms
 #define TIMER_INTERVAL_2HZ   (BASE_INTERVAL_MS / 2000)   // 2Hz  -> 500ms
