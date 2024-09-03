@@ -4,12 +4,12 @@
 #include <STM32FreeRTOS.h>
 
 #define HW_TIMER_INTERVAL_MS 1000L
-
-// 定义基本的时间间隔（单位：毫秒）
-#define BASE_INTERVAL_MS 1000
-
 //定义要检测的脉冲数量
 #define PULSE_COUNT 1000
+// 定义基本的时间间隔（单位：毫秒）
+#define BASE_INTERVAL_MS 1/2000
+
+
 // 生成32个定时器间隔
 #define TIMER_INTERVAL_1HZ   (BASE_INTERVAL_MS / 3000)   // 1Hz  -> 1000ms
 #define TIMER_INTERVAL_2HZ   (BASE_INTERVAL_MS / 2000)   // 2Hz  -> 500ms
@@ -48,10 +48,11 @@ extern ShiftRegister74HC595<1> O1_74HC595_sr;
 extern ShiftRegister74HC595<1> O2_74HC595_sr;
 extern ShiftRegister74HC595<1> O3_74HC595_sr;
 extern ShiftRegister74HC595<1> O4_74HC595_sr;
+extern volatile uint16_t PWM_Channle ;
 void IOOUT_device_init();
 void IOIN_device_init();
 
 void TaskTimer0Begin(void *pvParameters);
 void TaskTimer1Begin(void *pvParameters);
-
+void generate_waveform(unsigned long duration);
 #endif // !__74HC959_DEVICE__

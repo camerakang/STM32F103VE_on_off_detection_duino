@@ -1,31 +1,29 @@
 #include "74HC595_device.h"
 void TaskFrequencyCalculation(void *pvParameters);
-extern volatile unsigned int rising_edge_count;
-extern volatile unsigned long start_time;
-extern volatile unsigned long end_time;
-extern volatile unsigned long pwm_frequency;
+bool Generate_Signal = false;
 
 void setup()
 {
   Serial.begin(115200);
   IOOUT_device_init();
   IOIN_device_init();
-
   xTaskCreate(TaskTimer0Begin, (const portCHAR *)"Timer0Begin", 1024, NULL, 1, NULL);
   // xTaskCreate(TaskTimer1Begin, (const portCHAR *)"Timer1Begin", 1024, NULL, 1, NULL);
-
-  // xTaskCreate(TaskFrequencyCalculation, (const portCHAR *)"FrequencyCalculation", 1024, NULL, 1, NULL);
+  xTaskCreate(TaskFrequencyCalculation, (const portCHAR *)"FrequencyCalculation", 1024, NULL, 1, NULL);
   vTaskStartScheduler();
 }
 
 void loop()
 {
+  // 逐个打开定时器生成波形
 }
 void TaskFrequencyCalculation(void *pvParameters)
 {
-  while (1)
-  {
+  Generate_Signal = 1;
 
-    
+  while (Generate_Signal)
+  {
+    generate_waveform(200);
+    vTaskDelay(500);
   }
 }

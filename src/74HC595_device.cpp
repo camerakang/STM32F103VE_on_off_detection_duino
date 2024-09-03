@@ -5,6 +5,7 @@ uint32_t pwm_frequency[32] = {0};
 volatile uint16_t rising_edge_count[32]{0};
 volatile uint32_t start_time[32];
 volatile uint32_t end_time[32];
+volatile uint16_t PWM_Channle = 0;
 // volatile unsigned long pwm_frequency;
 
 STM32Timer ITimer0(TIM1);
@@ -15,7 +16,6 @@ ShiftRegister74HC595<1> O1_74HC595_sr(O1_74HC595_DATA_DS_PIN, O1_74HC595_CLOCK_S
 ShiftRegister74HC595<1> O2_74HC595_sr(O2_74HC595_DATA_DS_PIN, O2_74HC595_CLOCK_SHCP_PIN, O2_74HC595_LATCH_STCP_PIN);
 ShiftRegister74HC595<1> O3_74HC595_sr(O3_74HC595_DATA_DS_PIN, O3_74HC595_CLOCK_SHCP_PIN, O3_74HC595_LATCH_STCP_PIN);
 ShiftRegister74HC595<1> O4_74HC595_sr(O4_74HC595_DATA_DS_PIN, O4_74HC595_CLOCK_SHCP_PIN, O4_74HC595_LATCH_STCP_PIN);
-
 
 void calculatePwmFrequency(int index);
 // 定义PWM回调函数
@@ -283,22 +283,22 @@ void TaskTimer0Begin(void *pvParameters)
     else
         Serial.println("Can't set ITimer0 correctly. Select another freq. or interval");
 
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_1HZ, PWM_1HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_2HZ, PWM_2HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_3HZ, PWM_3HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_4HZ, PWM_4HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_5HZ, PWM_5HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_6HZ, PWM_6HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_7HZ, PWM_7HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_8HZ, PWM_8HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_9HZ, PWM_9HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_10HZ, PWM_10HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_11HZ, PWM_11HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_12HZ, PWM_12HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_13HZ, PWM_13HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_14HZ, PWM_14HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_15HZ, PWM_15HZ);
-    STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_16HZ, PWM_16HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_1HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_2HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_3HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_4HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_5HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_6HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_7HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_8HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_9HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_10HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_11HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_12HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_13HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_14HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_15HZ);
+    STM32_ISR_Timer0.setInterval(BASE_INTERVAL_MS, PWM_16HZ);
     auto NumTimers = STM32_ISR_Timer0.getNumTimers();
     Serial.println("NumTimers = " + String(NumTimers));
     while (1)
@@ -381,6 +381,9 @@ void IOOUT_device_init()
     O2_74HC595_sr.setAllLow();
     O3_74HC595_sr.setAllLow();
     O4_74HC595_sr.setAllLow();
+
+    STM32_ISR_Timer0.disableAll();
+    STM32_ISR_Timer1.disableAll();
 }
 
 void onPulse_0()
@@ -437,17 +440,15 @@ void onPulse_12()
 }
 void onPulse_13()
 {
-         calculatePwmFrequency(13);
-
+    calculatePwmFrequency(13);
 }
 void onPulse_14()
 {
-         calculatePwmFrequency(14);
-
+    calculatePwmFrequency(14);
 }
 void onPulse_15()
 {
-     calculatePwmFrequency(15);
+    calculatePwmFrequency(15);
     // if (rising_edge_count[15] == 0)
     // {
     //     start_time = micros();
@@ -529,5 +530,137 @@ void calculatePwmFrequency(int index)
         Serial.print(pwm_frequency[index]);
         Serial.println(" Hz");
         rising_edge_count[index] = 0;
+    }
+}
+/**
+ * @brief 为指定的定时器设置计时一段时间后关闭
+ *
+ * 该函数开启指定的定时器，并在一段时间后自动关闭它。使用非阻塞方式来等待
+ * 指定的时间间隔，以避免阻塞程序的其他部分。
+ *
+ * @param timerId 定时器的标识符
+ * @param duration 定时器运行的持续时间（毫秒）
+ */
+void enableTimerForDuration(ISR_Timer &STM32_ISR_Timer, int timerId, unsigned long duration)
+{
+    STM32_ISR_Timer.enable(timerId);    // 开启指定的定时器
+    unsigned long startTime = millis(); // 记录开始时间
+
+    // 使用一个非阻塞的方式来处理定时器的关闭
+    if (millis() - startTime >= duration)
+    {
+        STM32_ISR_Timer.disable(timerId); // 超过指定时间后关闭定时器
+        PWM_Channle++;
+    }
+}
+
+/**
+ * 生成PWM波形，根据持续时间选择适当的定时器通道。
+ *
+ * @param duration PWM波的持续时间。
+ */
+void generate_waveform(unsigned long duration)
+{
+    switch (PWM_Channle)
+    {
+    case 0:
+        enableTimerForDuration(STM32_ISR_Timer1, 0, duration);
+        break;
+    case 1:
+        enableTimerForDuration(STM32_ISR_Timer1, 1, duration);
+        break;
+    case 2:
+        enableTimerForDuration(STM32_ISR_Timer1, 2, duration);
+        break;
+    case 3:
+        enableTimerForDuration(STM32_ISR_Timer1, 3, duration);
+        break;
+    case 4:
+        enableTimerForDuration(STM32_ISR_Timer1, 4, duration);
+        break;
+    case 5:
+        enableTimerForDuration(STM32_ISR_Timer1, 5, duration);
+        break;
+    case 6:
+        enableTimerForDuration(STM32_ISR_Timer1, 6, duration);
+        break;
+    case 7:
+        enableTimerForDuration(STM32_ISR_Timer1, 7, duration);
+        break;
+    case 8:
+        enableTimerForDuration(STM32_ISR_Timer1, 8, duration);
+        break;
+    case 9:
+        enableTimerForDuration(STM32_ISR_Timer1, 9, duration);
+        break;
+    case 10:
+        enableTimerForDuration(STM32_ISR_Timer1, 10, duration);
+        break;
+    case 11:
+        enableTimerForDuration(STM32_ISR_Timer1, 11, duration);
+        break;
+    case 12:
+        enableTimerForDuration(STM32_ISR_Timer1, 12, duration);
+        break;
+    case 13:
+        enableTimerForDuration(STM32_ISR_Timer1, 13, duration);
+        break;
+    case 14:
+        enableTimerForDuration(STM32_ISR_Timer1, 14, duration);
+        break;
+    case 15:
+        enableTimerForDuration(STM32_ISR_Timer1, 15, duration);
+        break;
+    case 16:
+        enableTimerForDuration(STM32_ISR_Timer1, 16, duration);
+        break;
+    case 17:
+        enableTimerForDuration(STM32_ISR_Timer1, 17, duration);
+        break;
+    case 18:
+        enableTimerForDuration(STM32_ISR_Timer1, 18, duration);
+        break;
+    case 19:
+        enableTimerForDuration(STM32_ISR_Timer1, 19, duration);
+        break;
+    case 20:
+        enableTimerForDuration(STM32_ISR_Timer1, 20, duration);
+        break;
+    case 21:
+        enableTimerForDuration(STM32_ISR_Timer1, 21, duration);
+        break;
+    case 22:
+        enableTimerForDuration(STM32_ISR_Timer1, 22, duration);
+        break;
+    case 23:
+        enableTimerForDuration(STM32_ISR_Timer1, 23, duration);
+        break;
+    case 24:
+        enableTimerForDuration(STM32_ISR_Timer1, 24, duration);
+        break;
+    case 25:
+        enableTimerForDuration(STM32_ISR_Timer1, 25, duration);
+        break;
+    case 26:
+        enableTimerForDuration(STM32_ISR_Timer1, 26, duration);
+        break;
+    case 27:
+        enableTimerForDuration(STM32_ISR_Timer1, 27, duration);
+        break;
+    case 28:
+        enableTimerForDuration(STM32_ISR_Timer1, 28, duration);
+        break;
+    case 29:
+        enableTimerForDuration(STM32_ISR_Timer1, 29, duration);
+        break;
+    case 30:
+        enableTimerForDuration(STM32_ISR_Timer1, 30, duration);
+        break;
+    case 31:
+        enableTimerForDuration(STM32_ISR_Timer1, 31, duration);
+        PWM_Channle = -1;
+        break;
+    default:
+        break;
     }
 }
