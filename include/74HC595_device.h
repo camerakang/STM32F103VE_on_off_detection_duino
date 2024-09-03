@@ -3,14 +3,17 @@
 #include <ShiftRegister74HC595.h>
 #include <STM32FreeRTOS.h>
 
-#define HW_TIMER_INTERVAL_US 1000L
+#define HW_TIMER_INTERVAL_MS 1000L
 
 // 定义基本的时间间隔（单位：毫秒）
 #define BASE_INTERVAL_MS 1000
 
+//定义要检测的脉冲数量
+#define PULSE_COUNT 1000
+#define NUM_INTERRUPTS 16 // 定义中断数量
 // 生成32个定时器间隔
-#define TIMER_INTERVAL_1HZ   (BASE_INTERVAL_MS * 1)   // 1Hz  -> 1000ms
-#define TIMER_INTERVAL_2HZ   (BASE_INTERVAL_MS / 2)   // 2Hz  -> 500ms
+#define TIMER_INTERVAL_1HZ   (BASE_INTERVAL_MS / 3000)   // 1Hz  -> 1000ms
+#define TIMER_INTERVAL_2HZ   (BASE_INTERVAL_MS / 2000)   // 2Hz  -> 500ms
 #define TIMER_INTERVAL_3HZ   (BASE_INTERVAL_MS / 4)   // 3Hz  -> 333.33ms
 #define TIMER_INTERVAL_4HZ   (BASE_INTERVAL_MS / 6)   // 4Hz  -> 250ms
 #define TIMER_INTERVAL_5HZ   (BASE_INTERVAL_MS / 8)   // 5Hz  -> 200ms

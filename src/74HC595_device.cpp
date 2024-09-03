@@ -11,10 +11,13 @@ ShiftRegister74HC595<1> O2_74HC595_sr(O2_74HC595_DATA_DS_PIN, O2_74HC595_CLOCK_S
 ShiftRegister74HC595<1> O3_74HC595_sr(O3_74HC595_DATA_DS_PIN, O3_74HC595_CLOCK_SHCP_PIN, O3_74HC595_LATCH_STCP_PIN);
 ShiftRegister74HC595<1> O4_74HC595_sr(O4_74HC595_DATA_DS_PIN, O4_74HC595_CLOCK_SHCP_PIN, O4_74HC595_LATCH_STCP_PIN);
 
+volatile unsigned int rising_edge_count[NUM_INTERRUPTS];
+volatile unsigned long start_time[NUM_INTERRUPTS];
+volatile unsigned long end_time[NUM_INTERRUPTS];
 // 定义PWM回调函数
 void PWM_1HZ()
 {
-    Serial.println("PWM_1HZ");
+    // Serial.println("PWM_1HZ");
     static volatile bool outputState = false;
     outputState = !outputState; // 反转状态
     O1_74HC595_sr.set(0, outputState ? HIGH : LOW);
@@ -248,7 +251,7 @@ void PWM_31HZ()
 
 void PWM_32HZ()
 {
-    Serial.println("PWM_32HZ");
+    // Serial.println("PWM_32HZ");
     // 实现32Hz PWM的逻辑
     static volatile bool outputState = false;
     outputState = !outputState; // 反转状态
@@ -265,10 +268,10 @@ void Timer1Handler()
 }
 void TaskTimer0Begin(void *pvParameters)
 {
-    ITimer0.setFrequency(72000000, 0);
+    ITimer0.setFrequency(10000000, 0);
 
     // 创建两个任务用来初始化定时器
-    if (ITimer0.attachInterruptInterval(HW_TIMER_INTERVAL_US, Timer0Handler))
+    if (ITimer0.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, Timer0Handler))
     {
         auto lastMillis = millis();
         Serial.println("Starting  ITimer0 OK, millis() = " + String(lastMillis));
@@ -292,7 +295,8 @@ void TaskTimer0Begin(void *pvParameters)
     STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_14HZ, PWM_14HZ);
     STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_15HZ, PWM_15HZ);
     STM32_ISR_Timer0.setInterval(TIMER_INTERVAL_16HZ, PWM_16HZ);
-
+    auto NumTimers = STM32_ISR_Timer0.getNumTimers();
+    Serial.println("NumTimers = " + String(NumTimers));
     while (1)
     {
         Timer0Handler();
@@ -301,7 +305,7 @@ void TaskTimer0Begin(void *pvParameters)
 void TaskTimer1Begin(void *pvParameters)
 {
     ITimer1.setFrequency(72000000, 0);
-    if (ITimer1.attachInterruptInterval(HW_TIMER_INTERVAL_US, Timer1Handler))
+    if (ITimer1.attachInterruptInterval(HW_TIMER_INTERVAL_MS * 1000, Timer1Handler))
     {
         auto lastMillis = millis();
         Serial.println("Starting  ITimer1 OK, millis() = " + String(lastMillis));
@@ -324,7 +328,8 @@ void TaskTimer1Begin(void *pvParameters)
     STM32_ISR_Timer1.setInterval(TIMER_INTERVAL_30HZ, PWM_30HZ);
     STM32_ISR_Timer1.setInterval(TIMER_INTERVAL_31HZ, PWM_31HZ);
     STM32_ISR_Timer1.setInterval(TIMER_INTERVAL_32HZ, PWM_32HZ);
-
+    auto NumTimers = STM32_ISR_Timer1.getNumTimers();
+    Serial.println("NumTimers = " + String(NumTimers));
     while (1)
     {
         Timer1Handler();
@@ -373,10 +378,49 @@ void IOOUT_device_init()
     O3_74HC595_sr.setAllLow();
     O4_74HC595_sr.setAllLow();
 }
-
+// volatile unsigned int rising_edge_count;
+// volatile unsigned long start_time;
+// volatile unsigned long end_time;
+// volatile unsigned long pwm_frequency;
+void onPulse(int channel)
+{
+    if (rising_edge_count[channel] == 0)
+    {
+        start_time[channel] = micros();
+    }
+    else if (rising_edge_count[channel] == PULSE_COUNT)
+    {
+        end_time[channel] = micros();
+    }
+    rising_edge_count[channel]++;
+}
 void onPulse_0()
 {
-    Serial.println("onPulse_0");
+    static unsigned int rising_edge_count = 0;
+    static unsigned long start_time = 0;
+    static unsigned long end_time = 0;
+    static unsigned long pwm_frequency = 0;
+
+    if (rising_edge_count == 0)
+    {
+        start_time = micros();
+    }
+    else if (rising_edge_count == PULSE_COUNT)
+    {
+        end_time = micros();
+    }
+    rising_edge_count++;
+
+    if (rising_edge_count > PULSE_COUNT)
+    {
+        unsigned long pulse_duration = end_time - start_time;
+        unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
+        Serial.print("Average PWM Frequency: ");
+        Serial.print(average_frequency);
+        Serial.println(" Hz");
+        rising_edge_count = 0;
+        pwm_frequency = 0; // Note: This line seems unnecessary as pwm_frequency is not used after being set to 0.
+    }
 }
 void onPulse_1()
 {
@@ -425,20 +469,44 @@ void onPulse_15()
 }
 void IOIN_device_init()
 {
-    attachInterrupt(digitalPinToInterrupt(PD0), onPulse_0, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD1), onPulse_1, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD2), onPulse_2, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD3), onPulse_3, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD4), onPulse_4, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD5), onPulse_5, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD6), onPulse_6, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD7), onPulse_7, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD8), onPulse_8, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD9), onPulse_9, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD10), onPulse_10, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD11), onPulse_11, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD12), onPulse_12, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD13), onPulse_13, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD14), onPulse_14, FALLING);
-    attachInterrupt(digitalPinToInterrupt(PD15), onPulse_15, FALLING);
+    pinMode(IN_OE1, OUTPUT);
+    digitalWrite(IN_OE1, LOW);
+    pinMode(IN_OE2, OUTPUT);
+    digitalWrite(IN_OE2, LOW);
+    // pinMode(IN_OE3,OUTPUT);
+    // digitalWrite(IN_OE3,LOW);
+    //  pinMode(IN_OE4,OUTPUT);
+    //  digitalWrite(IN_OE4,LOW);
+
+    pinMode(DIR_IN1, OUTPUT);
+    digitalWrite(DIR_IN1, LOW);
+    pinMode(DIR_IN2, OUTPUT);
+    digitalWrite(DIR_IN2, LOW);
+    // pinMode(DIR_IN3, OUTPUT);
+    // digitalWrite(DIR_IN3, LOW);
+    // pinMode(DIR_IN4, OUTPUT);
+    // digitalWrite(DIR_IN4, LOW);
+    // attachInterrupt(digitalPinToInterrupt(PD0), onPulse_0, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD1), onPulse_1, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD2), onPulse_2, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD3), onPulse_3, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD4), onPulse_4, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD5), onPulse_5, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD6), onPulse_6, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD7), onPulse_7, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD8), onPulse_8, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD9), onPulse_9, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD10), onPulse_10, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD11), onPulse_11, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD12), onPulse_12, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD13), onPulse_13, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD14), onPulse_14, FALLING);
+    // attachInterrupt(digitalPinToInterrupt(PD15), onPulse_15, FALLING);
+
+    for (int i = 0; i < NUM_INTERRUPTS; i++)
+    {
+        pinMode(i, INPUT); // 假设中断引脚从0开始
+        attachInterrupt(digitalPinToInterrupt(i), [i]()
+                        { onPulse(i); }, FALLING);
+    }
 }
