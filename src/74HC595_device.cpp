@@ -11,9 +11,6 @@ ShiftRegister74HC595<1> O2_74HC595_sr(O2_74HC595_DATA_DS_PIN, O2_74HC595_CLOCK_S
 ShiftRegister74HC595<1> O3_74HC595_sr(O3_74HC595_DATA_DS_PIN, O3_74HC595_CLOCK_SHCP_PIN, O3_74HC595_LATCH_STCP_PIN);
 ShiftRegister74HC595<1> O4_74HC595_sr(O4_74HC595_DATA_DS_PIN, O4_74HC595_CLOCK_SHCP_PIN, O4_74HC595_LATCH_STCP_PIN);
 
-volatile unsigned int rising_edge_count[NUM_INTERRUPTS];
-volatile unsigned long start_time[NUM_INTERRUPTS];
-volatile unsigned long end_time[NUM_INTERRUPTS];
 // 定义PWM回调函数
 void PWM_1HZ()
 {
@@ -378,49 +375,35 @@ void IOOUT_device_init()
     O3_74HC595_sr.setAllLow();
     O4_74HC595_sr.setAllLow();
 }
-// volatile unsigned int rising_edge_count;
-// volatile unsigned long start_time;
-// volatile unsigned long end_time;
-// volatile unsigned long pwm_frequency;
-void onPulse(int channel)
-{
-    if (rising_edge_count[channel] == 0)
-    {
-        start_time[channel] = micros();
-    }
-    else if (rising_edge_count[channel] == PULSE_COUNT)
-    {
-        end_time[channel] = micros();
-    }
-    rising_edge_count[channel]++;
-}
+volatile unsigned int rising_edge_count;
+volatile unsigned long start_time;
+volatile unsigned long end_time;
+volatile unsigned long pwm_frequency;
+
 void onPulse_0()
 {
-    static unsigned int rising_edge_count = 0;
-    static unsigned long start_time = 0;
-    static unsigned long end_time = 0;
-    static unsigned long pwm_frequency = 0;
 
-    if (rising_edge_count == 0)
-    {
-        start_time = micros();
-    }
-    else if (rising_edge_count == PULSE_COUNT)
-    {
-        end_time = micros();
-    }
-    rising_edge_count++;
 
-    if (rising_edge_count > PULSE_COUNT)
-    {
-        unsigned long pulse_duration = end_time - start_time;
-        unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
-        Serial.print("Average PWM Frequency: ");
-        Serial.print(average_frequency);
-        Serial.println(" Hz");
-        rising_edge_count = 0;
-        pwm_frequency = 0; // Note: This line seems unnecessary as pwm_frequency is not used after being set to 0.
-    }
+    // if (rising_edge_count == 0)
+    // {
+    //     start_time = micros();
+    // }
+    // else if (rising_edge_count == PULSE_COUNT)
+    // {
+    //     end_time = micros();
+    // }
+    // rising_edge_count++;
+
+    // if (rising_edge_count > PULSE_COUNT)
+    // {
+    //     unsigned long pulse_duration = end_time - start_time;
+    //     unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
+    //     Serial.print("Average PWM Frequency: ");
+    //     Serial.print(average_frequency);
+    //     Serial.println(" Hz");
+    //     rising_edge_count = 0;
+    //     pwm_frequency = 0; // Note: This line seems unnecessary as pwm_frequency is not used after being set to 0.
+    // }
 }
 void onPulse_1()
 {
@@ -466,6 +449,26 @@ void onPulse_14()
 }
 void onPulse_15()
 {
+    if (rising_edge_count == 0)
+    {
+        start_time = micros();
+    }
+    else if (rising_edge_count == PULSE_COUNT)
+    {
+        end_time = micros();
+    }
+    rising_edge_count++;
+
+    if (rising_edge_count > PULSE_COUNT)
+    {
+        unsigned long pulse_duration = end_time - start_time;
+        unsigned long average_frequency = 1000000 / (pulse_duration / PULSE_COUNT);
+        Serial.print("Average PWM Frequency: ");
+        Serial.print(average_frequency);
+        Serial.println(" Hz");
+        rising_edge_count = 0;
+        pwm_frequency = 0; // Note: This line seems unnecessary as pwm_frequency is not used after being set to 0.
+    }
 }
 void IOIN_device_init()
 {
@@ -486,27 +489,20 @@ void IOIN_device_init()
     // digitalWrite(DIR_IN3, LOW);
     // pinMode(DIR_IN4, OUTPUT);
     // digitalWrite(DIR_IN4, LOW);
-    // attachInterrupt(digitalPinToInterrupt(PD0), onPulse_0, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD1), onPulse_1, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD2), onPulse_2, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD3), onPulse_3, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD4), onPulse_4, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD5), onPulse_5, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD6), onPulse_6, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD7), onPulse_7, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD8), onPulse_8, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD9), onPulse_9, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD10), onPulse_10, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD11), onPulse_11, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD12), onPulse_12, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD13), onPulse_13, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD14), onPulse_14, FALLING);
-    // attachInterrupt(digitalPinToInterrupt(PD15), onPulse_15, FALLING);
-
-    for (int i = 0; i < NUM_INTERRUPTS; i++)
-    {
-        pinMode(i, INPUT); // 假设中断引脚从0开始
-        attachInterrupt(digitalPinToInterrupt(i), [i]()
-                        { onPulse(i); }, FALLING);
-    }
+    attachInterrupt(digitalPinToInterrupt(PD0), onPulse_0, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD1), onPulse_1, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD2), onPulse_2, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD3), onPulse_3, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD4), onPulse_4, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD5), onPulse_5, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD6), onPulse_6, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD7), onPulse_7, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD8), onPulse_8, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD9), onPulse_9, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD10), onPulse_10, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD11), onPulse_11, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD12), onPulse_12, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD13), onPulse_13, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD14), onPulse_14, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PD15), onPulse_15, FALLING);
 }
